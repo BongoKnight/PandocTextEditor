@@ -7,10 +7,13 @@ author: BongoKnight
 
 ## Sources
 
-
 L'éditeur utilisé comme base provient de GitHub : [https://github.com/goldsborough/Writer-Tutorial](https://github.com/goldsborough/Writer-Tutorial).
 
 Le formattage de la coloration syntaxique provient de : [https://github.com/rupeshk/MarkdownHighlighter/blob/master/markdownhighlighter.py](https://github.com/rupeshk/MarkdownHighlighter/blob/master/markdownhighlighter.py)
+
+## Screenshot
+
+![Un screenshot de la fenêtre principale](./icons/UI.png)
 
 ## Objectif
 
@@ -24,10 +27,10 @@ Cet éditeur se sert de pypandoc pour exploiter les fonctionnalités de pandoc. 
 
 De la même manière pour pouvoir générer des PDF, pandoc a besoin d'une installation de Latex.
 
-## Améliorations envisagées
+## Améliorations 
 
 - [x] Export dans différents formats : HTML, PDF, Tex, docx
-- [ ] Export avec possibilité de définir un template
+- [x] Export avec possibilité de définir un template
 - [ ] Réouverture du dernier fichier ouvert ( => fichier de config)
 - [ ] Possibilité de choisir un fichier CSS, inclure par défaut du  CSS comme GitHub pour l'export HTML.
 - [ ] Faire un exécutable avec PyInstaller
@@ -37,3 +40,4 @@ De la même manière pour pouvoir générer des PDF, pandoc a besoin d'une insta
 - [ ] Prévisualisation dans une WebView
 - [ ] Correction orthographique
 - [ ] Sélection d'arguments lors de l'export : --standalone-file, --toc ...
+- [ ] Installation Guide

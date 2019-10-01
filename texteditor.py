@@ -124,7 +124,31 @@ class textEdit(QtWidgets.QMainWindow):
         self.redoAction.setStatusTip("Redo last undone thing")
         self.redoAction.setShortcut("Ctrl+Y")
         self.redoAction.triggered.connect(self.text.redo)
+        
+        self.templateAction = QtWidgets.QAction(QtGui.QIcon("icons/template.png"),"Define template file",self)
+        self.templateAction.setStatusTip("Define a template file before a quick export, extension must match the destination type")
+        self.templateAction.triggered.connect(self.defineTemplate)
+        
+        self.PDFExportAction = QtWidgets.QAction(QtGui.QIcon("icons/pdf.png"),"Export as PDF file",self)
+        self.PDFExportAction.setStatusTip("Export as PDF")
+        self.PDFExportAction.triggered.connect(self.exportPDF)
+        
+        self.HTMLExportAction = QtWidgets.QAction(QtGui.QIcon("icons/html.png"),"Export as HTML file",self)
+        self.HTMLExportAction.setStatusTip("Export as HTML")
+        self.HTMLExportAction.triggered.connect(self.exportHTML)
 
+        self.EpubExportAction = QtWidgets.QAction(QtGui.QIcon("icons/epub.png"),"Export as Epub file",self)
+        self.EpubExportAction.setStatusTip("Export as Epub")
+        self.EpubExportAction.triggered.connect(self.exportEpub)
+        
+        self.docxExportAction = QtWidgets.QAction(QtGui.QIcon("icons/word.png"),"Export as Docx file",self)
+        self.docxExportAction.setStatusTip("Export as Docx")
+        self.docxExportAction.triggered.connect(self.exportDocx)
+        
+        self.texExportAction = QtWidgets.QAction(QtGui.QIcon("icons/latex.png"),"Export as Tex file",self)
+        self.texExportAction.setStatusTip("Export as Tex")
+        self.texExportAction.triggered.connect(self.exportTex)
+        
         self.toolbar = self.addToolBar("Options")
 
         self.toolbar.addAction(self.newAction)
@@ -149,6 +173,15 @@ class textEdit(QtWidgets.QMainWindow):
         self.toolbar.addAction(wordCountAction)
         self.toolbar.addAction(self.findAction)
 
+        self.toolbar.addSeparator()
+        self.toolbar.addSeparator()
+
+        self.toolbar.addAction(self.templateAction)
+        self.toolbar.addAction(self.PDFExportAction)
+        self.toolbar.addAction(self.HTMLExportAction)
+        self.toolbar.addAction(self.EpubExportAction)
+        self.toolbar.addAction(self.docxExportAction)
+        self.toolbar.addAction(self.texExportAction)
         self.addToolBarBreak()
 
     def initFormatbar(self):
@@ -248,6 +281,7 @@ class textEdit(QtWidgets.QMainWindow):
         file = menubar.addMenu("File")
         edit = menubar.addMenu("Edit")
         view = menubar.addMenu("View")
+        export = menubar.addMenu("Export")
 
         # Add the most important actions to the menubar
 
@@ -264,6 +298,15 @@ class textEdit(QtWidgets.QMainWindow):
         edit.addAction(self.copyAction)
         edit.addAction(self.pasteAction)
         edit.addAction(self.findAction)
+        
+        export.addAction(self.templateAction)
+        export.addAction(self.HTMLExportAction)
+        export.addAction(self.PDFExportAction)
+        export.addAction(self.EpubExportAction)
+        export.addAction(self.docxExportAction)
+        export.addAction(self.texExportAction)
+        export.addAction(self.saveAsAction)
+        
 
         # Toggling actions for the various bars
         toolbarAction = QtWidgets.QAction("Toggle Toolbar",self)
@@ -572,6 +615,7 @@ class textEdit(QtWidgets.QMainWindow):
             except:
                 QtWidgets.QMessageBox.about(self,"Information!","Impossible to load last opened file.")
                 self.text.setText("")
+        self.changed = True
                 
     def save(self):
 
@@ -625,7 +669,61 @@ class textEdit(QtWidgets.QMainWindow):
                     file.write(pypandoc.convert_file(self.text.toPlainText(), 'docx', format='md', outputfile=filename, extra_args=pdoc_args))           
             else :
                 QtWidgets.QMessageBox.warning(self,"Warning!","Invalid file extension! Only HTML, docx and PDF are available.")
-            self.changesSaved = False
+
+
+
+
+    def defineTemplate(self):
+       self.template = QtWidgets.QFileDialog.getOpenFileName(self, 'Select Template')[0]
+       
+     
+    def exportPDF(self):
+        pdoc_args = ['-s']
+        filename = self.outputName()
+        if self.template.endswith(".pdf") or self.template.endswith(".tex"):
+            pdoc_args.append("--template={}".format(self.template))
+            pypandoc.convert_text(self.text.toPlainText(), 'pdf', format='md', outputfile=filename, extra_args=pdoc_args)   
+        else :
+            pypandoc.convert_text(self.text.toPlainText(), 'pdf', format='md', outputfile=filename, extra_args=pdoc_args)   
+
+    def exportHTML(self):
+        pdoc_args = ['-s']
+        filename = self.outputName()
+        if self.template.endswith(".html"):
+            pdoc_args.append("--template={}".format(self.template))
+            pypandoc.convert_text(self.text.toPlainText(), 'html', format='md', outputfile=filename, extra_args=pdoc_args)   
+        else :
+            pypandoc.convert_text(self.text.toPlainText(), 'html', format='md', outputfile=filename, extra_args=pdoc_args)   
+   
+    def exportEpub(self):
+        pdoc_args = ['-s']
+        filename = self.outputName()
+        if self.template.endswith(".epub"):
+            pdoc_args.append("--template={}".format(self.template))
+            pypandoc.convert_text(self.text.toPlainText(), 'epub', format='md', outputfile=filename, extra_args=pdoc_args)   
+        else :
+            pypandoc.convert_text(self.text.toPlainText(), 'epub', format='md', outputfile=filename, extra_args=pdoc_args)   
+
+    def exportDocx(self):
+        pdoc_args = ['-s']
+        filename = self.outputName()
+        if self.template.endswith(".html"):
+            pdoc_args.append("--template={}".format(self.template))
+            pypandoc.convert_text(self.text.toPlainText(), 'docx', format='md', outputfile=filename, extra_args=pdoc_args)   
+        else :
+            pypandoc.convert_text(self.text.toPlainText(), 'docx', format='md', outputfile=filename, extra_args=pdoc_args)   
+            
+
+    def exportTex(self):
+        pdoc_args = ['-s']
+        filename = self.outputName()
+        if self.template.endswith(".tex"):
+            pdoc_args.append("--template={}".format(self.template))
+            pypandoc.convert_text(self.text.toPlainText(), 'tex', format='md', outputfile=filename, extra_args=pdoc_args)   
+        else :
+            pypandoc.convert_text(self.text.toPlainText(), 'tex', format='md', outputfile=filename, extra_args=pdoc_args)   
+ 
+
 
     def preview(self):
 
@@ -669,7 +767,7 @@ class textEdit(QtWidgets.QMainWindow):
         #PYQT5 Returns a tuple in PyQt5
         filename = QtWidgets.QFileDialog.getOpenFileName(self, 'Insert image',".","Images (*.png *.xpm *.jpg *.bmp *.gif)")[0]
 
-        if filename:
+        if not filename:
 
             popup = QtWidgets.QMessageBox(QtWidgets.QMessageBox.Critical,
                                       "Image load error",
@@ -677,8 +775,8 @@ class textEdit(QtWidgets.QMainWindow):
                                       QtWidgets.QMessageBox.Ok,
                                       self)
             popup.show()
-            cursor = self.text.textCursor()
-            cursor.insertText("![{}]({})".format(cursor.selectedText(),filename))
+        cursor = self.text.textCursor()
+        cursor.insertText("![{}]({})".format(cursor.selectedText(),filename))
 
     def insertLink(self):
             link= self.getLink()
@@ -701,6 +799,11 @@ class textEdit(QtWidgets.QMainWindow):
         item, okPressed = QtWidgets.QInputDialog.getItem(self, "Create code block","Langage :", items, 0, False)        
         if okPressed and item != '':
             return item
+        
+    def outputName(self):
+        text, okPressed = QtWidgets.QInputDialog.getText(self, "Export the md file","Name of exported document :", QtWidgets.QLineEdit.Normal, "")
+        if okPressed and text != '':
+            return text
     
 # Formatage functions
     def mdformat(self,formatChar):

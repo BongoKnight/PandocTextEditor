@@ -20,85 +20,99 @@ class Table(QtWidgets.QDialog):
  
     def initUI(self):
 
-        # Rows
-        rowsLabel = QtWidgets.QLabel("Rows: ",self)
         
-        self.rows = QtWidgets.QSpinBox(self)
-
-        # Columns
-        colsLabel = QtWidgets.QLabel("Columns",self)
+        self.rows = 10
         
-        self.cols = QtWidgets.QSpinBox(self)
-
-        # Cell spacing (distance between cells)
-        spaceLabel = QtWidgets.QLabel("Cell spacing",self)
+        self.cols = 10
         
-        self.space = QtWidgets.QSpinBox(self)
-
-        # Cell padding (distance between cell and inner text)
-        padLabel = QtWidgets.QLabel("Cell padding",self)
-
-        self.pad = QtWidgets.QSpinBox(self)
+        self.space = 30
         
-        self.pad.setValue(10)
 
         # Button
         insertButton = QtWidgets.QPushButton("Insert",self)
         insertButton.clicked.connect(self.insert)
-
+        
+        self.tableWidget = QtWidgets.QTableWidget()
+        self.tableWidget.setRowCount(self.rows)
+        self.tableWidget.setColumnCount(self.cols)
+        for col in range(self.cols):
+            self.tableWidget.setColumnWidth(self.space,self.cols)
+        
+        
         # Layout
         layout = QtWidgets.QGridLayout()
-
-        layout.addWidget(rowsLabel,0,0)
-        layout.addWidget(self.rows,0,1)
-
-        layout.addWidget(colsLabel,1,0)
-        layout.addWidget(self.cols,1,1)
-
-        layout.addWidget(padLabel,2,0)
-        layout.addWidget(self.pad,2,1)
         
-        layout.addWidget(spaceLabel,3,0)
-        layout.addWidget(self.space,3,1)
-
-        layout.addWidget(insertButton,4,0,1,2)
+        
+        layout.addWidget(self.tableWidget,0,0,10,10)
+        layout.addWidget(insertButton,11,0,1,10)
 
         self.setWindowTitle("Insert Table")
-        self.setGeometry(300,300,200,100)
+        self.setGeometry(300,300,1000,400)
         self.setLayout(layout)
 
     def insert(self):
 
-        cursor = self.parent.text.textCursor()
+        maxCol = 0
+        maxRow = 0
+        maxLength = [0]*self.tableWidget.columnCount()
+        for col in range(self.tableWidget.columnCount()+1):
+            for row in range(self.tableWidget.rowCount()+1):
+                if self.tableWidget.item(row,col) is not None:
+                    if row > maxRow:
+                        maxRow = row
+                    if col > maxCol:
+                        maxCol = col
+                    if self.tableWidget.item(row,col) is not None:
+                        if len(self.tableWidget.item(row,col).text()) > maxLength[col]:
+                            maxLength[col] = len(self.tableWidget.item(row,col).text())
+                        
+    
+        textMd=""
+        tabText=[]
+        
+        for row in range(maxRow+1):
+        
+            lineText = []
+        
+            for col in range(maxCol+1):
+        
+                if self.tableWidget.item(row,col) is not None:
+        
+                    lineText.append(self.standardString(self.tableWidget.item(row,col).text(), maxLength[col]))
+        
+                else :
+        
+                    lineText.append(self.standardString("", maxLength[col]))
+        
+            tabText.append( " | ".join(lineText))
+        
+            if row == 0 :
 
-        # Get the configurations
-        rows = self.rows.value()
+        
+                tabText.append("-|-".join(["-"*maxLength[i] for i in range(maxCol+1)]))
 
-        cols = self.cols.value()
-
-        if not rows or not cols:
-
-            popup = QtWidgets.QMessageBox(QtWidgets.QMessageBox.Warning,
-                                      "Parameter error",
-                                      "Row and column numbers may not be zero!",
-                                      QtWidgets.QMessageBox.Ok,
-                                      self)
-            popup.show()
-
-        else:
-
-            padding = self.pad.value()
-
-            space = self.space.value()
-
-            # Set the padding and spacing
-            fmt = QtGui.QTextTableFormat()
-            
-            fmt.setCellPadding(padding)
-
-            fmt.setCellSpacing(space)
-
+        textMd="\n".join(tabText)
+                
+                
+        if self.parent is not None:
+            cursor = self.parent.text.textCursor()
             # Inser the new table
-            cursor.insertTable(rows,cols,fmt)
-
+            cursor.insertText(textMd)
+        
             self.close()
+        print(textMd)
+        
+    def standardString(self,string, length,separator=" "):
+        return string + separator*(length-len(string))
+    
+def main():
+    app = QtWidgets.QApplication(sys.argv)
+
+    main = Table()
+    main.show()
+
+    sys.exit(app.exec_())
+
+if __name__ == "__main__":
+    main()
+

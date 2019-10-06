@@ -1,0 +1,7 @@
+{
+    "filename": "./README.md",
+    "css": "./input/github.css",
+    "toc": true,
+    "selfContained": false,
+    "mathjax": false
+}

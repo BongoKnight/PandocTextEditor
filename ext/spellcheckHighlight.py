@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue Oct  1 21:15:37 2019
+Created on Wed Oct  2 00:05:01 2019
 
 @author: BongoKnight
 
 
 The MIT License (MIT)
+
+Copyright (c) 2014 Peter Goldsborough
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -28,17 +30,30 @@ SOFTWARE.
 
 """
 
-from PyQt5.QtWidgets import QTextBrowser
+from PyQt5 import QtGui, QtCore
+import re
 
-class MarkdownViewer(QTextBrowser):
-    def __init__(self, parent):
-        self.parent = parent
-        # QWebView
-        self.view = QTextBrowser.__init__(self, parent)
-        #self.view.setPage(MyBrowser())
-        self.setWindowTitle('Loading...')
-        #super(Browser).connect(self.ui.webView,QtCore.SIGNAL("titleChanged (const QString&amp;)"), self.adjustTitle)
+class SpellHighlighter(QtGui.QSyntaxHighlighter):
 
-    def setHtml(self,text):
-        self.view.setHtml(text)
-    
+    def __init__(self, *args):
+        super(SpellHighlighter, self).__init__(*args)
+        self.spell = None
+        self.regExp = re.compile('^[-+]?([0-9,.]*)$')
+
+    def setDict(self, spell):
+        self.spell = spell
+
+    def highlightBlock(self, text):
+        if not self.spell:
+            return
+        text = text
+        textFormat = QtGui.QTextCharFormat()
+        textFormat.setUnderlineColor(QtCore.Qt.red)
+        textFormat.setUnderlineStyle(QtGui.QTextCharFormat.WaveUnderline)
+        for word_object in re.finditer(r'\w+', text, re.UNICODE):
+            if self.regExp.match(word_object.group()) == None:
+                if len(self.spell.known([word_object.group().lower(), ])) < 1:
+                    self.setFormat(
+                        word_object.start(), 
+                        word_object.end() - word_object.start(), 
+                        textFormat)

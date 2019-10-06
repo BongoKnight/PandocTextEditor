@@ -32,6 +32,7 @@ import pypandoc
 #PYQT5 PyQt4’s QtGui module has been split into PyQt5’s QtGui, QtPrintSupport and QtWidgets modules
 
 from PyQt5 import QtWidgets
+from spellchecker import SpellChecker
 
 #PYQT5 QMainWindow, QApplication, QAction, QFontComboBox, QSpinBox, QTextEdit, QMessageBox
 #PYQT5 QFileDialog, QColorDialog, QDialog
@@ -40,23 +41,105 @@ from PyQt5 import QtPrintSupport
 #PYQT5 QPrintPreviewDialog, QPrintDialog
 
 from PyQt5 import QtGui, QtCore
-from PyQt5.QtCore import Qt
 
 
-from ext import mdPreview, wordcount, datetime, find, table, markdownHighlight
+from ext import  wordcount, datetime, find, table, markdownHighlight, spellcheckHighlight, config, option
 
 
 class textEdit(QtWidgets.QMainWindow):
 
     def __init__(self,parent=None,filename=""):
         QtWidgets.QMainWindow.__init__(self,parent)
-
+        
         self.filename = filename
         self.template = ""
+        self.spell = SpellChecker()
+        self.spell.word_frequency.load_text_file("input/dict_fr.txt")
+        self.highlighter = spellcheckHighlight.SpellHighlighter(self)
+        if self.spell:
+            self.highlighter.setDict(self.spell)
+            self.highlighter.rehighlight()
+
+
 
         self.changesSaved = True
-
+        self.initConfig()
         self.initUI()
+    
+    def initConfig(self):
+        config_path = "input/config.json"
+        self.config_file = config.JSONPropertiesFile(config_path)
+        self.config = self.config_file.get()
+    
+    def updateConf(self, key, value, immediateSave=True):
+        self.config[key] = value
+        if immediateSave:
+            self.config_file.set(self.config)
+    
+    def saveConfig(self):
+        self.config_file.set(self.config)
+        
+        
+    def mousePressEvent(self, event):
+        if event.button() == QtCore.Qt.RightButton:
+            # Rewrite the mouse event to a left button event so the cursor is
+            # moved to the location of the pointer.
+            event = QtGui.QMouseEvent(
+                QtCore.QEvent.MouseButtonPress, 
+                event.pos(), 
+                QtCore.Qt.LeftButton, 
+                QtCore.Qt.LeftButton, 
+                QtCore.Qt.NoModifier)
+        QtWidgets.QTextEdit.mousePressEvent(self, event)
+
+    def contextMenuEvent(self, event):
+        self.popup_menu.clear()
+        self.popup_menu = self.createStandardContextMenu()
+        first = self.popup_menu.actions()[0]
+
+        # Select the word under the cursor.
+        cursor = self.textCursor()
+        cursor.select(QtGui.QTextCursor.WordUnderCursor)
+        self.setTextCursor(cursor)
+
+        # Check if the selected word is misspelled and offer spelling
+        # suggestions if it is.
+        if self.textCursor().hasSelection():
+            text = self.textCursor().selectedText()
+            istitle = text.istitle()
+            if len(self.spell.known([text, ])) < 1:
+                for word in self.spell.candidates(text):
+                    if istitle:
+                        newAct = QtWidgets.QAction(word.title(), self)
+                    else:
+                        newAct = QtWidgets.QAction(word, self)
+                    newAct.triggered.connect(self.menuSelected)
+                    self.popup_menu.insertAction(first, newAct)
+
+        self.popup_menu.exec_(event.globalPos())
+
+
+
+
+    def menuSelected(self):
+        word = self.sender().text()
+        self.correctWord(word)
+        
+
+    def correctWord(self, word):
+        """
+        Replaces the selected text with word.
+        """
+        cursor = self.textCursor()
+        cursor.beginEditBlock()
+        cursor.removeSelectedText()
+        cursor.insertText(word)
+        cursor.endEditBlock()
+        
+        
+
+
+
 
     def initToolbar(self):
 
@@ -128,6 +211,11 @@ class textEdit(QtWidgets.QMainWindow):
         self.templateAction = QtWidgets.QAction(QtGui.QIcon("icons/template.png"),"Define template file",self)
         self.templateAction.setStatusTip("Define a template file before a quick export, extension must match the destination type")
         self.templateAction.triggered.connect(self.defineTemplate)
+
+        self.optionAction = QtWidgets.QAction(QtGui.QIcon("icons/gear.png"),"Define export otions",self)
+        self.optionAction.setStatusTip("Define the export options : self-contained, toc...")
+        self.optionAction.triggered.connect(self.setOptions)
+
         
         self.PDFExportAction = QtWidgets.QAction(QtGui.QIcon("icons/pdf.png"),"Export as PDF file",self)
         self.PDFExportAction.setStatusTip("Export as PDF")
@@ -177,6 +265,7 @@ class textEdit(QtWidgets.QMainWindow):
         self.toolbar.addSeparator()
 
         self.toolbar.addAction(self.templateAction)
+        self.toolbar.addAction(self.optionAction)
         self.toolbar.addAction(self.PDFExportAction)
         self.toolbar.addAction(self.HTMLExportAction)
         self.toolbar.addAction(self.EpubExportAction)
@@ -300,6 +389,7 @@ class textEdit(QtWidgets.QMainWindow):
         edit.addAction(self.findAction)
         
         export.addAction(self.templateAction)
+        export.addAction(self.optionAction)
         export.addAction(self.HTMLExportAction)
         export.addAction(self.PDFExportAction)
         export.addAction(self.EpubExportAction)
@@ -324,19 +414,21 @@ class textEdit(QtWidgets.QMainWindow):
 
 
     def initUI(self):
-        self.view = mdPreview.MarkdownViewer(self)
+        self.view = QtWidgets.QTextBrowser(self)
         self.text = QtWidgets.QTextEdit(self) 
         self.highlighter = markdownHighlight.MarkdownHighlighter(self.text)      
         #self.view.render(pypandoc.convert_text(self.text, 'rst', format='html'))
         # Set the tab stop width to around 33 pixels which is
         # more or less 8 spaces
         self.text.setTabStopWidth(33)
+        self.text.setFont(QtGui.QFont("Monospace"))
+        self.text.cursorPositionChanged.connect(self.changed)
 
         self.initToolbar()
         self.initFormatbar()
         self.initMenubar()
 
-        self.setCentralWidget(self.view)
+        #self.setCentralWidget(self.view)
         # Initialize a statusbar for the window
         self.statusbar = self.statusBar()
 
@@ -344,16 +436,16 @@ class textEdit(QtWidgets.QMainWindow):
         # the line and column number
         self.text.cursorPositionChanged.connect(self.cursorPosition)
 
-        # We need our own context menu for tables
-        self.text.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.text.customContextMenuRequested.connect(self.context)
-
-        self.text.textChanged.connect(self.changed)
 
         self.setGeometry(100,100,1030,800)
         self.setWindowTitle("Writer")
         self.setWindowIcon(QtGui.QIcon("icons/icon.png"))
         self.setCentralWidget(self.text)
+        if self.config["filename"]:
+            try:
+                self.load(self.config["filename"])
+            except Exception as e:
+                print(e)
 #        self.createGridLayout()
 #        
 #        windowLayout = QtWidgets.QVBoxLayout()
@@ -375,7 +467,7 @@ class textEdit(QtWidgets.QMainWindow):
         self.changesSaved = False
 
     def closeEvent(self,event):
-
+        self.config_file.set(self.config)
         if self.changesSaved:
 
             event.accept()
@@ -407,165 +499,6 @@ class textEdit(QtWidgets.QMainWindow):
             else:
                 event.ignore()
 
-    def context(self,pos):
-
-        # Grab the cursor
-        cursor = self.text.textCursor()
-
-        # Grab the current table, if there is one
-        table = cursor.currentTable()
-
-        # Above will return 0 if there is no current table, in which case
-        # we call the normal context menu. If there is a table, we create
-        # our own context menu specific to table interaction
-        if table:
-
-            menu = QtGui.QMenu(self)
-
-            appendRowAction = QtWidgets.QAction("Append row",self)
-            appendRowAction.triggered.connect(lambda: table.appendRows(1))
-
-            appendColAction = QtWidgets.QAction("Append column",self)
-            appendColAction.triggered.connect(lambda: table.appendColumns(1))
-
-
-            removeRowAction = QtWidgets.QAction("Remove row",self)
-            removeRowAction.triggered.connect(self.removeRow)
-
-            removeColAction = QtWidgets.QAction("Remove column",self)
-            removeColAction.triggered.connect(self.removeCol)
-
-
-            insertRowAction = QtWidgets.QAction("Insert row",self)
-            insertRowAction.triggered.connect(self.insertRow)
-
-            insertColAction = QtWidgets.QAction("Insert column",self)
-            insertColAction.triggered.connect(self.insertCol)
-
-
-            mergeAction = QtWidgets.QAction("Merge cells",self)
-            mergeAction.triggered.connect(lambda: table.mergeCells(cursor))
-
-            # Only allow merging if there is a selection
-            if not cursor.hasSelection():
-                mergeAction.setEnabled(False)
-
-
-            splitAction = QtWidgets.QAction("Split cells",self)
-
-            cell = table.cellAt(cursor)
-
-            # Only allow splitting if the current cell is larger
-            # than a normal cell
-            if cell.rowSpan() > 1 or cell.columnSpan() > 1:
-
-                splitAction.triggered.connect(lambda: table.splitCell(cell.row(),cell.column(),1,1))
-
-            else:
-                splitAction.setEnabled(False)
-
-
-            menu.addAction(appendRowAction)
-            menu.addAction(appendColAction)
-
-            menu.addSeparator()
-
-            menu.addAction(removeRowAction)
-            menu.addAction(removeColAction)
-
-            menu.addSeparator()
-
-            menu.addAction(insertRowAction)
-            menu.addAction(insertColAction)
-
-            menu.addSeparator()
-
-            menu.addAction(mergeAction)
-            menu.addAction(splitAction)
-
-            # Convert the widget coordinates into global coordinates
-            pos = self.mapToGlobal(pos)
-
-            # Add pixels for the tool and formatbars, which are not included
-            # in mapToGlobal(), but only if the two are currently visible and
-            # not toggled by the user
-
-            if self.toolbar.isVisible():
-                pos.setY(pos.y() + 45)
-
-            if self.formatbar.isVisible():
-                pos.setY(pos.y() + 45)
-                
-            # Move the menu to the new position
-            menu.move(pos)
-
-            menu.show()
-
-        else:
-
-            event = QtGui.QContextMenuEvent(QtGui.QContextMenuEvent.Mouse,QtCore.QPoint())
-
-            self.text.contextMenuEvent(event)
-
-    def removeRow(self):
-
-        # Grab the cursor
-        cursor = self.text.textCursor()
-
-        # Grab the current table (we assume there is one, since
-        # this is checked before calling)
-        table = cursor.currentTable()
-
-        # Get the current cell
-        cell = table.cellAt(cursor)
-
-        # Delete the cell's row
-        table.removeRows(cell.row(),1)
-
-    def removeCol(self):
-
-        # Grab the cursor
-        cursor = self.text.textCursor()
-
-        # Grab the current table (we assume there is one, since
-        # this is checked before calling)
-        table = cursor.currentTable()
-
-        # Get the current cell
-        cell = table.cellAt(cursor)
-
-        # Delete the cell's column
-        table.removeColumns(cell.column(),1)
-
-    def insertRow(self):
-
-        # Grab the cursor
-        cursor = self.text.textCursor()
-
-        # Grab the current table (we assume there is one, since
-        # this is checked before calling)
-        table = cursor.currentTable()
-
-        # Get the current cell
-        cell = table.cellAt(cursor)
-
-        # Insert a new row at the cell's position
-        table.insertRows(cell.row(),1)
-
-    def insertCol(self):
-
-        # Grab the cursor
-        cursor = self.text.textCursor()
-
-        # Grab the current table (we assume there is one, since
-        # this is checked before calling)
-        table = cursor.currentTable()
-
-        # Get the current cell
-        cell = table.cellAt(cursor)
-
-        # Insert a new row at the cell's position
-        table.insertColumns(cell.column(),1)
 
 
     def toggleToolbar(self):
@@ -593,17 +526,16 @@ class textEdit(QtWidgets.QMainWindow):
         spawn = textEdit()
         spawn.show()
 
-    def open(self,filename=""):
-        if filename == "":
-            # Get filename and show only .writer files
-            #PYQT5 Returns a tuple in PyQt5, we only need the filename
-            self.filename = QtWidgets.QFileDialog.getOpenFileName(self, 'Open File',".md")[0]
-        else:
-            self.filename = filename
+    def open(self):
+        # Get filename and show only .writer files
+        #PYQT5 Returns a tuple in PyQt5, we only need the filename
+        self.filename = QtWidgets.QFileDialog.getOpenFileName(self, 'Open File',".md")[0]
         if self.filename:
             with open(self.filename,"rt") as file:
                 self.text.setText(file.read())
                 self.setWindowTitle("Writter - " + self.filename)
+                self.updateConf("filename",self.filename)
+            
 
     def load(self,filename=""):
         if filename:
@@ -611,10 +543,12 @@ class textEdit(QtWidgets.QMainWindow):
                 with open(filename,"rt") as file:
                     self.text.setText(file.read())
                     self.filename = filename
+                    self.updateConf("filename",self.filename)
                     self.setWindowTitle("Writter - " + self.filename)      
-            except:
+            except Exception as e:
                 QtWidgets.QMessageBox.about(self,"Information!","Impossible to load last opened file.")
                 self.text.setText("")
+                print("Impossible to load last file : " + str(e))
         self.changed = True
                 
     def save(self):
@@ -623,7 +557,7 @@ class textEdit(QtWidgets.QMainWindow):
         #PYQT5 Returns a tuple in PyQt5, we only need the filename
         if not self.filename:
           self.filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save File')[0]
-
+          self.updateConf("filename",self.filename)
         if self.filename:
             
             # Append extension if not there yet
@@ -653,88 +587,91 @@ class textEdit(QtWidgets.QMainWindow):
         filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save File as')[0]
 
         if filename:
-            
-
-            if filename.endswith(".html"):
-                with open(filename,"wt+") as file:
-                    pdoc_args = ['-s']
-                    file.write(pypandoc.convert_text(self.text.toPlainText(), 'html', format='md', extra_args=pdoc_args))
-            elif filename.endswith(".tex"):
-                with open(filename,"wt+") as file:
-                    pdoc_args = ['-s']
-                    file.write(pypandoc.convert_text(self.text.toPlainText(), 'tex', format='md', extra_args=pdoc_args))
-            elif filename.endswith(".docx"):
-                with open(filename,"wt+") as file:
-                    pdoc_args = ['-s']
-                    file.write(pypandoc.convert_file(self.text.toPlainText(), 'docx', format='md', outputfile=filename, extra_args=pdoc_args))           
-            else :
-                QtWidgets.QMessageBox.warning(self,"Warning!","Invalid file extension! Only HTML, docx and PDF are available.")
+            with open(filename,"wt+") as file:
+                    file.write(self.text.toPlainText())
+                    self.filename = filename
+                    self.setWindowTitle("Writter - " + self.filename)
+                    self.updateConf("filename",self.filename)
+                    
 
 
 
 
     def defineTemplate(self):
        self.template = QtWidgets.QFileDialog.getOpenFileName(self, 'Select Template')[0]
+       self.updateConf("template",self.template)
        
+    def setOptions(self):
+        option.Parameters(self)       
+        
+    def getOptions(self,exportType):
+        pdoc_args=["-s"]
+        try:
+
+            if self.config["toc"]:
+                pdoc_args.append("--toc")
+            if exportType == "html":
+                if self.config["mathjax"]:
+                    pdoc_args.append("--mathjax")
+                if self.config["selfContained"]:
+                    pdoc_args.append("--self-contained")
+                if self.config["css"]:
+                    pdoc_args.append("-c {}".format(self.config["css"]))
+                if self.template.endswith("html"):
+                    pdoc_args.append("--template {}".format(self.template))
+            if exportType =="docx":
+                if self.template.endswith("docx"):
+                    pdoc_args.append("--reference-doc={}".format(self.template))
+             if exportType =="tex":
+                if self.template.endswith("tex"):
+                    pdoc_args.append("--template {}".format(self.template))           
+        except Exception as e:
+            print("Error getting options some may not have been set!")
+               
+        
+        return pdoc_args
+            
      
     def exportPDF(self):
-        pdoc_args = ['-s']
+        pdoc_args = self.getOptions("pdf")
         filename = self.outputName()
-        if self.template.endswith(".pdf") or self.template.endswith(".tex"):
-            pdoc_args.append("--template={}".format(self.template))
-            pypandoc.convert_text(self.text.toPlainText(), 'pdf', format='md', outputfile=filename, extra_args=pdoc_args)   
-        else :
-            pypandoc.convert_text(self.text.toPlainText(), 'pdf', format='md', outputfile=filename, extra_args=pdoc_args)   
+        pypandoc.convert_text(self.text.toPlainText(), 'pdf', format='md', outputfile=filename, extra_args=pdoc_args)   
+
 
     def exportHTML(self):
-        pdoc_args = ['-s']
+        pdoc_args = self.getOptions("html")
         filename = self.outputName()
-        if self.template.endswith(".html"):
-            pdoc_args.append("--template={}".format(self.template))
-            pypandoc.convert_text(self.text.toPlainText(), 'html', format='md', outputfile=filename, extra_args=pdoc_args)   
-        else :
-            pypandoc.convert_text(self.text.toPlainText(), 'html', format='md', outputfile=filename, extra_args=pdoc_args)   
+        pypandoc.convert_text(self.text.toPlainText(), 'html', format='md', outputfile=filename, extra_args=pdoc_args)   
    
     def exportEpub(self):
-        pdoc_args = ['-s']
+        pdoc_args = self.getOptions("epub")
         filename = self.outputName()
-        if self.template.endswith(".epub"):
-            pdoc_args.append("--template={}".format(self.template))
-            pypandoc.convert_text(self.text.toPlainText(), 'epub', format='md', outputfile=filename, extra_args=pdoc_args)   
-        else :
-            pypandoc.convert_text(self.text.toPlainText(), 'epub', format='md', outputfile=filename, extra_args=pdoc_args)   
+        pypandoc.convert_text(self.text.toPlainText(), 'epub', format='md', outputfile=filename, extra_args=pdoc_args)   
 
     def exportDocx(self):
-        pdoc_args = ['-s']
+        pdoc_args = self.getOptions("docx")
         filename = self.outputName()
-        if self.template.endswith(".html"):
-            pdoc_args.append("--template={}".format(self.template))
-            pypandoc.convert_text(self.text.toPlainText(), 'docx', format='md', outputfile=filename, extra_args=pdoc_args)   
-        else :
-            pypandoc.convert_text(self.text.toPlainText(), 'docx', format='md', outputfile=filename, extra_args=pdoc_args)   
-            
+        pypandoc.convert_text(self.text.toPlainText(), 'docx', format='md', outputfile=filename, extra_args=pdoc_args)   
+
 
     def exportTex(self):
-        pdoc_args = ['-s']
+        pdoc_args = self.getOptions("tex")
         filename = self.outputName()
-        if self.template.endswith(".tex"):
-            pdoc_args.append("--template={}".format(self.template))
-            pypandoc.convert_text(self.text.toPlainText(), 'tex', format='md', outputfile=filename, extra_args=pdoc_args)   
-        else :
-            pypandoc.convert_text(self.text.toPlainText(), 'tex', format='md', outputfile=filename, extra_args=pdoc_args)   
+        pypandoc.convert_text(self.text.toPlainText(), 'tex', format='md', outputfile=filename, extra_args=pdoc_args)   
+
  
 
 
     def preview(self):
 
-        # Open preview dialog
-        preview = QtPrintSupport.QPrintPreviewDialog()
+        if self.takeCentralWidget() == self.text:
+            self.setCentralWidget(self.view)
+            self.view.setHtml( pypandoc.convert_text(self.text.toPlainText(), 'html', format='md',extra_args=["-c input/github.css"]))   
+        else:
+            self.setCentralWidget(self.text)
+            
 
-        # If a print is requested, open print dialog
-        preview.paintRequested.connect(lambda p: self.text.print_(p))
-
-        preview.exec_()
-
+        
     def printHandler(self):
 
         # Open printing dialog
@@ -780,8 +717,9 @@ class textEdit(QtWidgets.QMainWindow):
 
     def insertLink(self):
             link= self.getLink()
+            text = link if self.text.textCursor().selectedText() == "" else self.text.textCursor().selectedText()
             cursor = self.text.textCursor()
-            cursor.insertText("[{}]({})".format(cursor.selectedText(),link))
+            cursor.insertText("[{}]({})".format(text,link))
 
     def insertCode(self):
             langage= self.getCodeLangage()
@@ -854,9 +792,7 @@ def main():
     app = QtWidgets.QApplication(sys.argv)
 
     main = textEdit()
-    main.show()
-    main.load("README.md")
-
+    main.showFullScreen()
 
     sys.exit(app.exec_())
 

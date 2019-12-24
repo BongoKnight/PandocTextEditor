@@ -32,7 +32,7 @@ import pypandoc
 #PYQT5 PyQt4’s QtGui module has been split into PyQt5’s QtGui, QtPrintSupport and QtWidgets modules
 
 from PyQt5 import QtWidgets
-from spellchecker import SpellChecker
+from spellchecker import spellchecker
 
 #PYQT5 QMainWindow, QApplication, QAction, QFontComboBox, QSpinBox, QTextEdit, QMessageBox
 #PYQT5 QFileDialog, QColorDialog, QDialog
@@ -53,13 +53,12 @@ class textEdit(QtWidgets.QMainWindow):
         
         self.filename = filename
         self.template = ""
-        self.spell = SpellChecker()
+        self.spell = spellchecker.SpellChecker()
         self.spell.word_frequency.load_text_file("input/dict_fr.txt")
-        self.highlighter = spellcheckHighlight.SpellHighlighter(self)
+        self.highlighter = spellcheckHighlight.spellCheckHighlighter(self)
         if self.spell:
             self.highlighter.setDict(self.spell)
             self.highlighter.rehighlight()
-
 
 
         self.changesSaved = True
@@ -90,33 +89,35 @@ class textEdit(QtWidgets.QMainWindow):
                 QtCore.Qt.LeftButton, 
                 QtCore.Qt.LeftButton, 
                 QtCore.Qt.NoModifier)
-        QtWidgets.QTextEdit.mousePressEvent(self, event)
+        if type(self) == QtWidgets.QTextEdit:
+            QtWidgets.QTextEdit.mousePressEvent(self, event)
+
 
     def contextMenuEvent(self, event):
-        self.popup_menu.clear()
-        self.popup_menu = self.createStandardContextMenu()
-        first = self.popup_menu.actions()[0]
-
-        # Select the word under the cursor.
-        cursor = self.textCursor()
-        cursor.select(QtGui.QTextCursor.WordUnderCursor)
-        self.setTextCursor(cursor)
-
-        # Check if the selected word is misspelled and offer spelling
-        # suggestions if it is.
-        if self.textCursor().hasSelection():
-            text = self.textCursor().selectedText()
-            istitle = text.istitle()
-            if len(self.spell.known([text, ])) < 1:
-                for word in self.spell.candidates(text):
-                    if istitle:
-                        newAct = QtWidgets.QAction(word.title(), self)
-                    else:
-                        newAct = QtWidgets.QAction(word, self)
-                    newAct.triggered.connect(self.menuSelected)
-                    self.popup_menu.insertAction(first, newAct)
-
-        self.popup_menu.exec_(event.globalPos())
+        if type(self) == QtWidgets.QTextEdit:
+            self.popup_menu = self.createStandardContextMenu()
+            first = self.popup_menu.actions()[0]
+    
+            # Select the word under the cursor.
+            cursor = self.textCursor()
+            cursor.select(QtGui.QTextCursor.WordUnderCursor)
+            self.setTextCursor(cursor)
+    
+            # Check if the selected word is misspelled and offer spelling
+            # suggestions if it is.
+            if self.textCursor().hasSelection():
+                text = self.textCursor().selectedText()
+                istitle = text.istitle()
+                if len(self.spell.known([text, ])) < 1:
+                    for word in self.spell.candidates(text):
+                        if istitle:
+                            newAct = QtWidgets.QAction(word.title(), self)
+                        else:
+                            newAct = QtWidgets.QAction(word, self)
+                        newAct.triggered.connect(self.menuSelected)
+                        self.popup_menu.insertAction(first, newAct)
+    
+            self.popup_menu.exec_(event.globalPos())
 
 
 
@@ -135,7 +136,8 @@ class textEdit(QtWidgets.QMainWindow):
         cursor.removeSelectedText()
         cursor.insertText(word)
         cursor.endEditBlock()
-        
+        self.highlighter.rehighlight()
+
         
 
 
@@ -437,7 +439,7 @@ class textEdit(QtWidgets.QMainWindow):
         self.text.cursorPositionChanged.connect(self.cursorPosition)
 
 
-        self.setGeometry(100,100,1030,800)
+        self.setGeometry(100,100,1000,800)
         self.setWindowTitle("Writer")
         self.setWindowIcon(QtGui.QIcon("icons/icon.png"))
         self.setCentralWidget(self.text)
@@ -464,6 +466,7 @@ class textEdit(QtWidgets.QMainWindow):
         self.horizontalGroupBox.setLayout(layout)
 
     def changed(self):
+        self.highlighter.rehighlight()
         self.changesSaved = False
 
     def closeEvent(self,event):
@@ -622,7 +625,7 @@ class textEdit(QtWidgets.QMainWindow):
             if exportType =="docx":
                 if self.template.endswith("docx"):
                     pdoc_args.append("--reference-doc={}".format(self.template))
-             if exportType =="tex":
+            if exportType =="tex":
                 if self.template.endswith("tex"):
                     pdoc_args.append("--template {}".format(self.template))           
         except Exception as e:
@@ -787,12 +790,29 @@ class textEdit(QtWidgets.QMainWindow):
     def numberList(self):
         cursor = self.text.textCursor()
         cursor.insertText("1. \n2. \n3. \n")
+        
+        
+        
+class SpellAction(QtWidgets.QAction):
+
+    '''
+    A special QAction that returns the text in a signal.
+    '''
+
+    correct = QtCore.pyqtSignal()
+
+    def __init__(self, *args):
+        QtWidgets.QAction.__init__(self, *args)
+
+        self.triggered.connect(lambda x: self.correct.emit(self.text()))
+
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
 
     main = textEdit()
-    main.showFullScreen()
+    main.show()
+    #main.showFullScreen()
 
     sys.exit(app.exec_())
 

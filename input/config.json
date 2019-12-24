@@ -1,7 +1,8 @@
 {
-    "filename": "./README.md",
-    "css": "./input/github.css",
+    "filename": "/home/anainvert/Desktop/bellingcatFr.md",
+    "css": "/home/anainvert/Desktop/TextEditor/input/github.css",
     "toc": true,
     "selfContained": false,
-    "mathjax": false
+    "mathjax": false,
+    "template": "/home/anainvert/Desktop/TextEditor/input/template.tex"
 }

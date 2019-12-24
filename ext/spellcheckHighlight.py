@@ -32,16 +32,20 @@ SOFTWARE.
 
 from PyQt5 import QtGui, QtCore
 import re
+from PyQt5.QtGui import QSyntaxHighlighter
 
-class SpellHighlighter(QtGui.QSyntaxHighlighter):
+class spellCheckHighlighter(QSyntaxHighlighter):
 
-    def __init__(self, *args):
-        super(SpellHighlighter, self).__init__(*args)
+    WORDS = u'(?iu)[\w\']+'
+    def __init__(self, parent):
+        QSyntaxHighlighter.__init__(self, parent)
+        self.parent = parent
         self.spell = None
         self.regExp = re.compile('^[-+]?([0-9,.]*)$')
 
     def setDict(self, spell):
         self.spell = spell
+        print(spell)
 
     def highlightBlock(self, text):
         if not self.spell:

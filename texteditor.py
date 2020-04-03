@@ -48,14 +48,14 @@ from ext import  wordcount, datetime, find, table, markdownHighlight, spellcheck
 
 class textEdit(QtWidgets.QMainWindow):
 
-    def __init__(self,parent=None,filename=""):
+    def __init__(self,parent=None):
         QtWidgets.QMainWindow.__init__(self,parent)
 
-        self.filename = filename
         self.template = ""
         self.spell = spellchecker.SpellChecker()
         self.spell.word_frequency.load_text_file("input/dict_fr.txt")
         self.highlighter = spellcheckHighlight.spellCheckHighlighter(self)
+
         if self.spell:
             self.highlighter.setDict(self.spell)
             self.highlighter.rehighlight()
@@ -63,6 +63,7 @@ class textEdit(QtWidgets.QMainWindow):
 
         self.changesSaved = True
         self.initConfig()
+        self.tab = QtWidgets.QTabWidget(self)
         self.initUI()
 
     def initConfig(self):
@@ -442,14 +443,18 @@ class textEdit(QtWidgets.QMainWindow):
         self.setGeometry(100,100,1000,800)
         self.setWindowTitle("Writer")
         self.setWindowIcon(QtGui.QIcon("icons/icon.png"))
-        self.setCentralWidget(self.text)
+        self.setCentralWidget(self.tab)
+        self.currentFilename = ""
         if  "filename" in self.config.keys():
             try:
                 self.load(self.config["filename"])
             except Exception as e:
-                print("No filemane was already created.")
-                self.config.updateConf("filename","~/Desktop/tmp.md")
-                self.load(self.config["filename"])
+                print("Error loading last file.")
+        else :
+            self.updateConf("filename","~/Desktop/tmp.md")
+            self.load(self.config["filename"])
+                
+        
 #        self.createGridLayout()
 #
 #        windowLayout = QtWidgets.QVBoxLayout()
@@ -480,21 +485,15 @@ class textEdit(QtWidgets.QMainWindow):
         else:
 
             popup = QtWidgets.QMessageBox(self)
-
             popup.setIcon(QtWidgets.QMessageBox.Warning)
-
             popup.setText("The document has been modified")
-
             popup.setInformativeText("Do you want to save your changes?")
-
             popup.setStandardButtons(QtWidgets.QMessageBox.Save   |
                                       QtWidgets.QMessageBox.Cancel |
                                       QtWidgets.QMessageBox.Discard)
 
             popup.setDefaultButton(QtWidgets.QMessageBox.Save)
-
             answer = popup.exec_()
-
             if answer == QtWidgets.QMessageBox.Save:
                 self.save()
 
@@ -544,34 +543,35 @@ class textEdit(QtWidgets.QMainWindow):
 
     def load(self,filename=""):
         if filename:
-            try:
-                with open(filename,"rt") as file:
-                    self.text.setText(file.read())
-                    self.filename = filename
-                    self.updateConf("filename",self.filename)
-                    self.setWindowTitle("Writter - " + self.filename)
-            except Exception as e:
-                QtWidgets.QMessageBox.about(self,"Information!","Impossible to load last opened file.")
-                self.text.setText("")
-                print("Impossible to load last file : " + str(e))
-        self.changed = True
+            for file in self.config["filename"]:
+                self.filename = self.config["filename"]
+                try :
+                    self.tab.addTab(self.text,file)
+                    with open(file,"rt+") as file:
+                        self.text.setText(file.read())
+                        self.setWindowTitle("Writter - " + self.filename[0])
+                except Exception as e:
+                    QtWidgets.QMessageBox.about(self,"Information!","Impossible to load last opened file.")
+                    self.text.setText("")
+                    print("Impossible to load last file : " + str(e))
+            self.changed = False
 
     def save(self):
 
         # Only open dialog if there is no filename yet
         #PYQT5 Returns a tuple in PyQt5, we only need the filename
-        if not self.filename:
-          self.filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save File')[0]
-          self.updateConf("filename",self.filename)
-        if self.filename:
+        if not self.currentFilename:
+          self.currentFilename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save File')[0]
+          self.updateConf("filename",self.filename.add(self.currentFilename))
+        if self.currentFilename:
 
             # Append extension if not there yet
-            if not self.filename.endswith(".md"):
-                self.filename += ".md"
+            if not self.currentFilename.endswith(".md"):
+                self.currentFilename += ".md"
 
             # We just store the contents of the text file along with the
             # format in html, which Qt does in a very nice way for us
-            with open(self.filename,"wt") as file:
+            with open(self.currentFilename,"wt") as file:
                 file.write(self.text.toPlainText())
         self.changesSaved = True
 

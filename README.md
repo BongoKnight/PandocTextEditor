@@ -1,6 +1,6 @@
 ---
-title: Readme 
-author: BongoKnight 
+title: Readme
+author: BongoKnight
 toc-title: Sommaire
 ...
 
@@ -23,7 +23,7 @@ Il est ensuite possible de configurer des options d'exports comme :
 
 Voici quelques exemples :
 
-1. Une 
+1. Une
 2. liste
 3. numérotée
 
@@ -92,7 +92,7 @@ Cet éditeur se sert de pypandoc pour exploiter les fonctionnalités de pandoc. 
 
 De la même manière pour pouvoir générer des PDF, pandoc a besoin d'une installation de Latex.
 
-## Améliorations 
+## Améliorations
 
 - [x] Export dans différents formats : HTML, PDF, Tex, docx
 - [x] Export avec possibilité de définir un template
@@ -101,7 +101,7 @@ De la même manière pour pouvoir générer des PDF, pandoc a besoin d'une insta
 - [x] Possibilité de choisir un fichier CSS, inclure par défaut du  CSS comme GitHub pour l'export HTML.
 - [ ] Faire un exécutable avec PyInstaller
 - [ ] Refactoring pour réduire la taille de la classe TextEdit
-- [ ] Modifier légérement les couleurs de la coloration syntaxique
+- [ ] Modifier légèrement les couleurs de la coloration syntaxique
 - [ ] Plusieurs onglets d'éditions
 - [x] Prévisualisation dans une WebView (Ctrl+Shift+P) //TODO Séparation droite gauche
 - [ ] Correction orthographique

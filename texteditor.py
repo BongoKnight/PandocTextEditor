@@ -671,7 +671,7 @@ class textEdit(QtWidgets.QMainWindow):
 
         if self.takeCentralWidget() == self.text:
             self.setCentralWidget(self.view)
-            self.view.setHtml( pypandoc.convert_text(self.text.toPlainText(), 'html', format='md',extra_args=["-c input/github.css"]))
+            self.view.setHtml( pypandoc.convert_text(self.text.toPlainText(), 'html', format='md',extra_args=["-c input/github.css","-s"]))
         else:
             self.setCentralWidget(self.text)
 

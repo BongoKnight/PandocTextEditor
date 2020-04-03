@@ -29,15 +29,15 @@ Voici quelques exemples :
 
 Du texte en **gras** ou en *italique*, on peut aussi écrire H~2~O ou 2^10^. Enfin pour les écritures mathématiques le mieux reste d'utiliser le format Latex (qui fait aussi partie des améliorations à venir)...
 
-Ici un lien vers une image de [puma](https://en.wikipedia.org/wiki/Puma_(genus)#/media/File:CMM_MountainLion.jpg)
+Ici un lien vers une image de [puma](https://upload.wikimedia.org/wikipedia/commons/2/2e/CMM\_MountainLion.jpg)
 
 Et ici l'image :
 
-![Oh un puma!](https://en.wikipedia.org/wiki/Puma_(genus)#/media/File:CMM_MountainLion.jpg)
+![Oh un puma!](https://upload.wikimedia.org/wikipedia/commons/2/2e/CMM\_MountainLion.jpg)
 
 
 Ou ici redimensionnée en tout petit :
-![Oh un puma!](https://en.wikipedia.org/wiki/Puma_(genus)#/media/File:CMM_MountainLion.jpg){ width=2cm }
+![Oh un puma!](https://upload.wikimedia.org/wikipedia/commons/2/2e/CMM\_MountainLion.jpg){ width=2cm }
 
 
 Et ici un tableau (qui n'apparait pas bien sur github mais qui sera tout beau dans vos documents):
@@ -60,7 +60,7 @@ Des notes de bas de pages : comme ici [^unenote]
 
 [Des petites lettres majuscules!]{.smallcaps}
 
-[Un peu de mise en forme, du texte rouge]{textcolor:red}
+[Un peu de mise en forme, du texte rouge]{color=red}
 
 ```python
 def sum(a,b):
@@ -77,7 +77,7 @@ Mais pas dans les blocs de code!
 
 ### Quelques conseils
 
-Pour faire des rapports en `docx` ou en `pdf`, il est conseiller de modifier le template de base de pandoc pour en faire un correspondant à vos attentes. Dans le dossier `ìnput` des templates basiques pour les différents formats devraient arriver bientôt.
+Pour faire des rapports en `docx` ou en `pdf`, il est conseiller de modifier le template de base de pandoc pour en faire un correspondant à vos attentes. Dans le dossier `input` des templates basiques pour les différents formats devraient arriver bientôt.
 
 
 ## Objectif
@@ -94,20 +94,28 @@ De la même manière pour pouvoir générer des PDF, pandoc a besoin d'une insta
 
 ## Améliorations 
 
+### Fonctionnalités
+
 - [x] Export dans différents formats : HTML, PDF, Tex, docx
 - [x] Export avec possibilité de définir un template
 - [x] Supporter l'insertion de tableau au format pipe_table de pandoc
 - [x] Réouverture du dernier fichier ouvert ( => fichier de config)
 - [x] Possibilité de choisir un fichier CSS, inclure par défaut du  CSS comme GitHub pour l'export HTML.
 - [ ] Faire un exécutable avec PyInstaller
-- [ ] Refactoring pour réduire la taille de la classe TextEdit
 - [ ] Modifier légérement les couleurs de la coloration syntaxique
 - [ ] Plusieurs onglets d'éditions
 - [x] Prévisualisation dans une WebView (Ctrl+Shift+P) //TODO Séparation droite gauche
+- [ ] Prévisualisation webview avec un CSS personalisé
 - [ ] Correction orthographique
 - [x] Sélection d'arguments lors de l'export : --standalone-file, --toc ...
 - [ ] Guide d'installation et d'édition
 - [ ] Ajouter des templates de base pour l'export HTML, PDF et docx.
+- [ ] Ajouter des extensions supportées par pandoc comme : différents tableaux et checklist
+
+### Clarté du code :
+- [ ] Valider le code avec SonarQube
+- [ ] Ajouter des exceptions à la génération des document (erreur letlxmacro.sty)
+- [ ] Refactoring pour réduire la taille de la classe TextEdit
 
 ## Sources
 

@@ -1,8 +1,8 @@
 {
-    "filename": "/home/anainvert/Desktop/Cours techniques/Cours.md",
-    "css": "/home/anainvert/Desktop/TextEditor/input/github.css",
+    "filename": "D:/Sciences/2020_BongoKnight/PandocTextEditor/README.md",
+    "css": "D:/Sciences/2020_BongoKnight/PandocTextEditor/input/github.css",
     "toc": true,
-    "selfContained": false,
+    "selfContained": true,
     "mathjax": false,
     "template": "/home/anainvert/Desktop/TextEditor/input/template.tex"
 }

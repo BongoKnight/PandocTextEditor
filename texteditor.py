@@ -32,7 +32,7 @@ import pypandoc
 #PYQT5 PyQt4’s QtGui module has been split into PyQt5’s QtGui, QtPrintSupport and QtWidgets modules
 
 from PyQt5 import QtWidgets
-from spellchecker import spellchecker
+#from spellchecker import spellchecker
 
 #PYQT5 QMainWindow, QApplication, QAction, QFontComboBox, QSpinBox, QTextEdit, QMessageBox
 #PYQT5 QFileDialog, QColorDialog, QDialog
@@ -43,7 +43,7 @@ from PyQt5 import QtPrintSupport
 from PyQt5 import QtGui, QtCore
 
 
-from ext import  wordcount, datetime, find, table, markdownHighlight, spellcheckHighlight, config, option
+from ext import  webPreview, tools, wordcount, datetime, find, table, markdownHighlight, spellcheckHighlight, config, option
 
 
 class textEdit(QtWidgets.QMainWindow):
@@ -53,12 +53,12 @@ class textEdit(QtWidgets.QMainWindow):
 
         self.filename = filename
         self.template = ""
-        self.spell = spellchecker.SpellChecker()
-        self.spell.word_frequency.load_text_file("input/dict_fr.txt")
-        self.highlighter = spellcheckHighlight.spellCheckHighlighter(self)
-        if self.spell:
-            self.highlighter.setDict(self.spell)
-            self.highlighter.rehighlight()
+        #self.spell = spellchecker.SpellChecker()
+        #self.spell.word_frequency.load_text_file("input/dict_fr.txt")
+        #self.highlighter = spellcheckHighlight.spellCheckHighlighter(self)
+        #if self.spell:
+        #    self.highlighter.setDict(self.spell)
+        #    self.highlighter.rehighlight()
 
 
         self.changesSaved = True
@@ -210,35 +210,6 @@ class textEdit(QtWidgets.QMainWindow):
         self.redoAction.setShortcut("Ctrl+Y")
         self.redoAction.triggered.connect(self.text.redo)
 
-        self.templateAction = QtWidgets.QAction(QtGui.QIcon("icons/template.png"),"Define template file",self)
-        self.templateAction.setStatusTip("Define a template file before a quick export, extension must match the destination type")
-        self.templateAction.triggered.connect(self.defineTemplate)
-
-        self.optionAction = QtWidgets.QAction(QtGui.QIcon("icons/gear.png"),"Define export otions",self)
-        self.optionAction.setStatusTip("Define the export options : self-contained, toc...")
-        self.optionAction.triggered.connect(self.setOptions)
-
-
-        self.PDFExportAction = QtWidgets.QAction(QtGui.QIcon("icons/pdf.png"),"Export as PDF file",self)
-        self.PDFExportAction.setStatusTip("Export as PDF")
-        self.PDFExportAction.triggered.connect(self.exportPDF)
-
-        self.HTMLExportAction = QtWidgets.QAction(QtGui.QIcon("icons/html.png"),"Export as HTML file",self)
-        self.HTMLExportAction.setStatusTip("Export as HTML")
-        self.HTMLExportAction.triggered.connect(self.exportHTML)
-
-        self.EpubExportAction = QtWidgets.QAction(QtGui.QIcon("icons/epub.png"),"Export as Epub file",self)
-        self.EpubExportAction.setStatusTip("Export as Epub")
-        self.EpubExportAction.triggered.connect(self.exportEpub)
-
-        self.docxExportAction = QtWidgets.QAction(QtGui.QIcon("icons/word.png"),"Export as Docx file",self)
-        self.docxExportAction.setStatusTip("Export as Docx")
-        self.docxExportAction.triggered.connect(self.exportDocx)
-
-        self.texExportAction = QtWidgets.QAction(QtGui.QIcon("icons/latex.png"),"Export as Tex file",self)
-        self.texExportAction.setStatusTip("Export as Tex")
-        self.texExportAction.triggered.connect(self.exportTex)
-
         self.toolbar = self.addToolBar("Options")
 
         self.toolbar.addAction(self.newAction)
@@ -262,17 +233,51 @@ class textEdit(QtWidgets.QMainWindow):
         self.toolbar.addSeparator()
         self.toolbar.addAction(wordCountAction)
         self.toolbar.addAction(self.findAction)
+        #self.addToolBarBreak()
 
-        self.toolbar.addSeparator()
-        self.toolbar.addSeparator()
 
-        self.toolbar.addAction(self.templateAction)
-        self.toolbar.addAction(self.optionAction)
-        self.toolbar.addAction(self.PDFExportAction)
-        self.toolbar.addAction(self.HTMLExportAction)
-        self.toolbar.addAction(self.EpubExportAction)
-        self.toolbar.addAction(self.docxExportAction)
-        self.toolbar.addAction(self.texExportAction)
+    def initExportbar(self):
+        self.templateAction = QtWidgets.QAction(QtGui.QIcon("icons/template.png"),"Define template file",self)
+        self.templateAction.setStatusTip("Define a template file before a quick export, extension must match the destination type")
+        self.templateAction.triggered.connect(self.defineTemplate)
+
+        self.optionAction = QtWidgets.QAction(QtGui.QIcon("icons/gear.png"),"Define export otions",self)
+        self.optionAction.setStatusTip("Define the export options : self-contained, toc...")
+        self.optionAction.triggered.connect(self.setOptions)
+        
+        self.PDFExportAction = QtWidgets.QAction(QtGui.QIcon("icons/pdf.png"),"Export as PDF file",self)
+        self.PDFExportAction.setStatusTip("Export as PDF")
+        #self.PDFExportAction.triggered.connect(self.exportPDF)
+        self.PDFExportAction.triggered.connect(lambda: self.export_gen('pdf'))
+
+        self.HTMLExportAction = QtWidgets.QAction(QtGui.QIcon("icons/html.png"),"Export as HTML file",self)
+        self.HTMLExportAction.setStatusTip("Export as HTML")
+        #self.HTMLExportAction.triggered.connect(self.exportHTML)
+        self.HTMLExportAction.triggered.connect(lambda: self.export_gen('html'))
+
+        self.EpubExportAction = QtWidgets.QAction(QtGui.QIcon("icons/epub.png"),"Export as Epub file",self)
+        self.EpubExportAction.setStatusTip("Export as Epub")
+        #self.EpubExportAction.triggered.connect(self.exportEpub)
+        self.EpubExportAction.triggered.connect(lambda: self.export_gen('epub'))
+
+        self.docxExportAction = QtWidgets.QAction(QtGui.QIcon("icons/word.png"),"Export as Docx file",self)
+        self.docxExportAction.setStatusTip("Export as Docx")
+        #self.docxExportAction.triggered.connect(self.exportDocx)
+        self.docxExportAction.triggered.connect(lambda: self.export_gen('docx'))
+
+        self.texExportAction = QtWidgets.QAction(QtGui.QIcon("icons/latex.png"),"Export as Tex file",self)
+        self.texExportAction.setStatusTip("Export as Tex")
+        #self.texExportAction.triggered.connect(self.exportTex)
+        self.texExportAction.triggered.connect(lambda: self.export_gen('tex'))
+
+        self.exportbar = self.addToolBar("Options")
+        self.exportbar.addAction(self.templateAction)
+        self.exportbar.addAction(self.optionAction)
+        self.exportbar.addAction(self.PDFExportAction)
+        self.exportbar.addAction(self.HTMLExportAction)
+        self.exportbar.addAction(self.EpubExportAction)
+        self.exportbar.addAction(self.docxExportAction)
+        self.exportbar.addAction(self.texExportAction)
         self.addToolBarBreak()
 
     def initFormatbar(self):
@@ -410,9 +415,13 @@ class textEdit(QtWidgets.QMainWindow):
         statusbarAction = QtWidgets.QAction("Toggle Statusbar",self)
         statusbarAction.triggered.connect(self.toggleStatusbar)
 
+        exportbarAction = QtWidgets.QAction("Toggle Exportbar",self)
+        exportbarAction.triggered.connect(self.toggleExportbar)
+
         view.addAction(toolbarAction)
         view.addAction(formatbarAction)
         view.addAction(statusbarAction)
+        view.addAction(exportbarAction)
 
 
     def initUI(self):
@@ -427,8 +436,10 @@ class textEdit(QtWidgets.QMainWindow):
         self.text.cursorPositionChanged.connect(self.changed)
 
         self.initToolbar()
+        self.initExportbar()
         self.initFormatbar()
         self.initMenubar()
+        
 
         #self.setCentralWidget(self.view)
         # Initialize a statusbar for the window
@@ -526,6 +537,13 @@ class textEdit(QtWidgets.QMainWindow):
 
         # Set the visibility to its inverse
         self.statusbar.setVisible(not state)
+    
+    def toggleExportbar(self):
+
+        state = self.exportbar.isVisible()
+
+        # Set the visibility to its inverse
+        self.exportbar.setVisible(not state)
 
     def new(self):
         spawn = textEdit()
@@ -639,9 +657,8 @@ class textEdit(QtWidgets.QMainWindow):
 
     def exportPDF(self):
         pdoc_args = self.getOptions("pdf")
-        filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save as PDF',self.filename,filter=".html,*")[0]
+        filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save as PDF',tools.cleanExtName(self.filename,"pdf"),filter=".pdf,*")[0]
         pypandoc.convert_text(self.text.toPlainText(), 'pdf', format='md', outputfile=filename, extra_args=pdoc_args)
-
 
     def exportHTML(self):
         pdoc_args = self.getOptions("html")
@@ -665,8 +682,19 @@ class textEdit(QtWidgets.QMainWindow):
         pypandoc.convert_text(self.text.toPlainText(), 'tex', format='md', outputfile=filename, extra_args=pdoc_args)
 
 
+    # def export_Gen() avec list ?/ arg = ext, check sur pandoc_args 
+    # A finir -- plus check le tool de renomage
+    def export_gen(self,ext):
+        pdoc_args = self.getOptions("%s" % ext)
+        filename = QtWidgets.QFileDialog.getSaveFileName(self, "Export as %s" % ext.upper(),tools.cleanExtName( self.filename,"%s" % ext),filter="%s(*.%s);;No extension (*.*)" % (ext.upper(),ext) )[0]
+        try:
+            pypandoc.convert_text(self.text.toPlainText(), "%s" % ext, format='md', outputfile=filename, extra_args=pdoc_args)
+        except RuntimeError:
+            #pass
+            print("RuntimeError: Output to pdf only works by using a outputfile.")
 
 
+        #utiliser la nouvelle web preview
     def preview(self):
 
         if self.takeCentralWidget() == self.text:
@@ -675,7 +703,11 @@ class textEdit(QtWidgets.QMainWindow):
         else:
             self.setCentralWidget(self.text)
 
-
+        #textHTML = pypandoc.convert_text(self.text.toPlainText(), 'html', format='md',extra_args=["-c input/github.css","-s"])
+        ##webPrev = webPreview.WebTextPrev().browse(self.filename,textHTML)
+        #textPrev = webPreview.WebTextPrev().browse(self.filename,textHTML)
+        
+        ## se ferme tout seul...
 
     def printHandler(self):
 

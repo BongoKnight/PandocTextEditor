@@ -27,7 +27,7 @@ Voici quelques exemples :
 2. liste
 3. numérotée
 
-Du texte en **gras** ou en *italique*, on peut aussi écrire H~2~O ou 2^10^. Enfin pour les écritures mathématiques le mieux reste d'utiliser le format Latex (qui fait aussi partie des améliorations à venir)...
+Du texte en **gras** ou en *italique*, on peut aussi écrire H~2~O ou 2^10^. Enfin pour les écritures mathématiques le mieux reste d'utiliser le format Latex (qui fait aussi partie des améliorations �  venir)...
 
 Ici un lien vers une image de [puma](https://upload.wikimedia.org/wikipedia/commons/2/2e/CMM\_MountainLion.jpg)
 
@@ -55,7 +55,7 @@ _____________________________
 
 Des notes de bas de pages : comme ici [^unenote]
 
-[^unenote]: qui apparaitra à la fin de la page.
+[^unenote]: qui apparaitra �  la fin de la page.
 
 
 [Des petites lettres majuscules!]{.smallcaps}
@@ -77,16 +77,16 @@ Mais pas dans les blocs de code!
 
 ### Quelques conseils
 
-Pour faire des rapports en `docx` ou en `pdf`, il est conseiller de modifier le template de base de pandoc pour en faire un correspondant à vos attentes. Dans le dossier `input` des templates basiques pour les différents formats devraient arriver bientôt.
+Pour faire des rapports en `docx` ou en `pdf`, il est conseiller de modifier le template de base de pandoc pour en faire un correspondant �  vos attentes. Dans le dossier `input` des templates basiques pour les différents formats devraient arriver bientôt.
 
 
 ## Objectif
 
-Ecrire des notes dans un format simple, les exporter facilement dans différents formats sans avoir à lever les mains du clavier.
+Ecrire des notes dans un format simple, les exporter facilement dans différents formats sans avoir �  lever les mains du clavier.
 
 ## Remarques
 
-Lors de l'insertion d'une image, le chemin absolu est renseigné. Pour l'export en PDF ou en docx celà ne pose pas de problèmes. En revanche, dans le cas d'un export en HTML l'envoi du document résultant n'incluera pas les images.
+Lors de l'insertion d'une image, le chemin absolu est renseigné. Pour l'export en PDF ou en docx cel�  ne pose pas de problèmes. En revanche, dans le cas d'un export en HTML l'envoi du document résultant n'incluera pas les images.
 
 Cet éditeur se sert de pypandoc pour exploiter les fonctionnalités de pandoc. Pypandoc demande que pandoc soit installé sur la machine.
 
@@ -114,7 +114,7 @@ De la même manière pour pouvoir générer des PDF, pandoc a besoin d'une insta
 
 ### Clarté du code :
 - [ ] Valider le code avec SonarQube
-- [ ] Ajouter des exceptions à la génération des document (erreur letlxmacro.sty)
+- [ ] Ajouter des exceptions �  la génération des document (erreur letlxmacro.sty)
 - [ ] Refactoring pour réduire la taille de la classe TextEdit
 
 ## Sources

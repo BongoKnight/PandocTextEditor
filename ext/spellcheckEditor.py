@@ -30,34 +30,28 @@ SOFTWARE.
 
 """
 
-from PyQt5 import QtGui, QtCore
-import re
-from PyQt5.QtGui import QSyntaxHighlighter
+from PyQt5 import QtGui, QtCore, QtWidgets
+from spellchecker import spellchecker
+import sys
 
-class spellCheckHighlighter(QSyntaxHighlighter):
-
-    WORDS = u'(?iu)[\w\']+'
-    def __init__(self, parent):
-        QSyntaxHighlighter.__init__(self, parent)
+class spellcheckEditor(QtWidgets.QMainWindow):
+    def __init__(self,text,parent=None):
+        QtWidgets.QMainWindow.__init__(self,parent)
+        self.text = text
         self.parent = parent
-        self.spell = None
-        self.regExp = re.compile('^[-+]?([0-9,.]*)$')
+        self.dict = spellchecker.load_file("../input/dict_fr.txt","utf-8")
+        
+    def initUI(self):
+        for word in self.text:
+            
+        
+def main():
 
-    def setDict(self, spell):
-        self.spell = spell
-        print(spell)
+    app = QtWidgets.QApplication(sys.argv)
+    main = spellcheckEditor("Toto est beau")
+    main.show()
+    sys.exit(app.exec_())
 
-    def highlightBlock(self, text):
-        if not self.spell:
-            return
-        text = text
-        textFormat = QtGui.QTextCharFormat()
-        textFormat.setUnderlineColor(QtCore.Qt.red)
-        textFormat.setUnderlineStyle(QtGui.QTextCharFormat.WaveUnderline)
-        for word_object in re.finditer(r'\w+', text, re.UNICODE):
-            if self.regExp.match(word_object.group()) == None:
-                if len(self.spell.known([word_object.group().lower(), ])) < 1:
-                    self.setFormat(
-                        word_object.start(), 
-                        word_object.end() - word_object.start(), 
-                        textFormat)
+
+if __name__ == "__main__":
+    main()

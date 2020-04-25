@@ -43,6 +43,7 @@ class spellcheckEditor(QtWidgets.QMainWindow):
         
     def initUI(self):
         for word in self.text:
+            a=0
             
         
 def main():

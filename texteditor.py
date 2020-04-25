@@ -32,7 +32,7 @@ import pypandoc
 #PYQT5 PyQt4’s QtGui module has been split into PyQt5’s QtGui, QtPrintSupport and QtWidgets modules
 
 from PyQt5 import QtWidgets
-#from spellchecker import spellchecker
+from spellchecker import spellchecker
 
 #PYQT5 QMainWindow, QApplication, QAction, QFontComboBox, QSpinBox, QTextEdit, QMessageBox
 #PYQT5 QFileDialog, QColorDialog, QDialog
@@ -50,15 +50,16 @@ class textEdit(QtWidgets.QMainWindow):
 
     def __init__(self,parent=None,filename=""):
         QtWidgets.QMainWindow.__init__(self,parent)
+        self.mainWindow = QtWidgets.QMainWindow()
 
         self.filename = filename
         self.template = ""
-        #self.spell = spellchecker.SpellChecker()
-        #self.spell.word_frequency.load_text_file("input/dict_fr.txt")
-        #self.highlighter = spellcheckHighlight.spellCheckHighlighter(self)
-        #if self.spell:
-        #    self.highlighter.setDict(self.spell)
-        #    self.highlighter.rehighlight()
+        self.spell = spellchecker.SpellChecker()
+        self.spell.word_frequency.load_text_file("input/dict_fr.txt")
+        self.highlighter = spellcheckHighlight.spellCheckHighlighter(self)
+        if self.spell:
+            self.highlighter.setDict(self.spell)
+            self.highlighter.rehighlight()
 
 
         self.changesSaved = True
@@ -696,18 +697,18 @@ class textEdit(QtWidgets.QMainWindow):
 
         #utiliser la nouvelle web preview
     def preview(self):
+        pypandoc.convert_text(self.text.toPlainText(), "html", format='md', outputfile="preview.html", extra_args=["-c input/github.css","-s"]) #"--self-contained",
+        self.webPrev = webPreview.WebPreview("web", self.filename.split(".")[0], "preview.html")
+        self.webPrev.show()
+    
 
-        if self.takeCentralWidget() == self.text:
-            self.setCentralWidget(self.view)
-            self.view.setHtml( pypandoc.convert_text(self.text.toPlainText(), 'html', format='md',extra_args=["-c input/github.css","-s"]))
-        else:
-            self.setCentralWidget(self.text)
+        #if self.takeCentralWidget() == self.text:
+        #    self.setCentralWidget(self.view)
+        #    self.view.setHtml( pypandoc.convert_text(self.text.toPlainText(), 'html', format='md',extra_args=["-c input/github.css --self-contain","-s"]))
+        #else:
+        #    self.setCentralWidget(self.text)
 
-        #textHTML = pypandoc.convert_text(self.text.toPlainText(), 'html', format='md',extra_args=["-c input/github.css","-s"])
-        ##webPrev = webPreview.WebTextPrev().browse(self.filename,textHTML)
-        #textPrev = webPreview.WebTextPrev().browse(self.filename,textHTML)
         
-        ## se ferme tout seul...
 
     def printHandler(self):
 

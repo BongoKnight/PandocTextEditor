@@ -32,7 +32,7 @@ import pypandoc
 #PYQT5 PyQt4’s QtGui module has been split into PyQt5’s QtGui, QtPrintSupport and QtWidgets modules
 
 from PyQt5 import QtWidgets
-from spellchecker import spellchecker
+from spellchecker import SpellChecker
 
 #PYQT5 QMainWindow, QApplication, QAction, QFontComboBox, QSpinBox, QTextEdit, QMessageBox
 #PYQT5 QFileDialog, QColorDialog, QDialog
@@ -43,7 +43,7 @@ from PyQt5 import QtPrintSupport
 from PyQt5 import QtGui, QtCore
 
 
-from ext import  wordcount, datetime, find, table, markdownHighlight, spellcheckHighlight, config, option
+from ext import  wordcount, datetime, find, table, markdownHighlight, config, option, tools, spellcheckEditor
 
 
 class textEdit(QtWidgets.QMainWindow):
@@ -53,17 +53,16 @@ class textEdit(QtWidgets.QMainWindow):
 
         self.filename = filename
         self.template = ""
-        self.spell = spellchecker.SpellChecker()
-        self.spell.word_frequency.load_text_file("input/dict_fr.txt")
-        self.highlighter = spellcheckHighlight.spellCheckHighlighter(self)
-        if self.spell:
-            self.highlighter.setDict(self.spell)
-            self.highlighter.rehighlight()
 
 
         self.changesSaved = True
         self.initConfig()
         self.initUI()
+        self.initspellCheck()
+
+    def initspellCheck(self):
+        self.spell = spellcheckEditor.spellcheckEditor("",self)
+        self.spell.spell.word_frequency.load_text_file("input/dict_fr.txt")
 
     def initConfig(self):
         config_path = "input/config.json"
@@ -180,6 +179,11 @@ class textEdit(QtWidgets.QMainWindow):
         wordCountAction.setShortcut("Ctrl+W")
         wordCountAction.triggered.connect(self.wordCount)
 
+        self.hortografAction = QtWidgets.QAction(QtGui.QIcon("icons/spellcheck.png"),"Correction",self)
+        self.hortografAction.setStatusTip("Spellcheck of current document")
+        self.hortografAction.setShortcut("Ctrl+Shift+P")
+        self.hortografAction.triggered.connect(self.checkText)       
+
         self.findAction = QtWidgets.QAction(QtGui.QIcon("icons/find.png"),"Find and replace",self)
         self.findAction.setStatusTip("Find and replace words in your document")
         self.findAction.setShortcut("Ctrl+F")
@@ -262,6 +266,7 @@ class textEdit(QtWidgets.QMainWindow):
         self.toolbar.addSeparator()
         self.toolbar.addAction(wordCountAction)
         self.toolbar.addAction(self.findAction)
+        self.toolbar.addAction(self.hortografAction)
 
         self.toolbar.addSeparator()
         self.toolbar.addSeparator()
@@ -274,6 +279,10 @@ class textEdit(QtWidgets.QMainWindow):
         self.toolbar.addAction(self.docxExportAction)
         self.toolbar.addAction(self.texExportAction)
         self.addToolBarBreak()
+
+    def checkText(self):
+        self.spell.updateText(self.text.toPlainText())
+        self.spell.show()
 
     def initFormatbar(self):
 
@@ -545,8 +554,8 @@ class textEdit(QtWidgets.QMainWindow):
     def load(self,filename=""):
         if filename:
             try:
-                with open(filename,"rt") as file:
-                    self.text.setText(file.read())
+                with open(filename,"rb") as file:
+                    self.text.setPlainText(str(file.read(),"utf-8"))
                     self.filename = filename
                     self.updateConf("filename",self.filename)
                     self.setWindowTitle("Writter - " + self.filename)
@@ -554,7 +563,7 @@ class textEdit(QtWidgets.QMainWindow):
                 QtWidgets.QMessageBox.about(self,"Information!","Impossible to load last opened file.")
                 self.text.setText("")
                 print("Impossible to load last file : " + str(e))
-        self.changed = True
+        self.changesSaved = False
 
     def save(self):
 
@@ -610,28 +619,36 @@ class textEdit(QtWidgets.QMainWindow):
         option.Parameters(self)
 
     def getOptions(self,exportType):
-        pdoc_args=["-s"]
-        try:
+        pdoc_args=[]
+        if "command" in self.config.keys() and self.config["command"] != "":
+            pdoc_args=self.config["command"].split(" ")
+        else:
+            pdoc_args=["-s"]
+            try:
 
-            if self.config["toc"]:
-                pdoc_args.append("--toc")
-            if exportType == "html":
-                if self.config["mathjax"]:
-                    pdoc_args.append("--mathjax")
-                if self.config["selfContained"]:
-                    pdoc_args.append("--self-contained")
-                if self.config["css"]:
-                    pdoc_args.append("-c {}".format(self.config["css"]))
-                if self.template.endswith("html"):
-                    pdoc_args.append("--template {}".format(self.template))
-            if exportType =="docx":
-                if self.template.endswith("docx"):
-                    pdoc_args.append("--reference-doc={}".format(self.template))
-            if exportType =="tex":
-                if self.template.endswith("tex"):
-                    pdoc_args.append("--template {}".format(self.template))
-        except Exception as e:
-            print("Error getting options some may not have been set!")
+                if self.config["toc"]:
+                    pdoc_args.append("--toc")
+                if exportType == "html":
+                    if self.config["mathjax"]:
+                        pdoc_args.append("--mathjax")
+                    if self.config["selfContained"]:
+                        pdoc_args.append("--self-contained")
+                    #TODO Correct a bug when not self contained and local css
+                    if self.config["css"]:
+                        if self.config["css"].startswith("C:/") and not self.config["selfContained"]:
+                            pdoc_args.append("-c file://{}".format(self.config["css"]))
+                        else:
+                            pdoc_args.append("-c {}".format(self.config["css"]))
+                    if self.template.endswith("html"):
+                        pdoc_args.append("--template {}".format(self.template))
+                if exportType =="docx":
+                    if self.template.endswith("docx"):
+                        pdoc_args.append("--reference-doc={}".format(self.template))
+                if exportType =="tex":
+                    if self.template.endswith("tex"):
+                        pdoc_args.append("--template {}".format(self.template))
+            except Exception as e:
+                print("Error getting options some may not have been set!")
 
 
         return pdoc_args
@@ -639,29 +656,29 @@ class textEdit(QtWidgets.QMainWindow):
 
     def exportPDF(self):
         pdoc_args = self.getOptions("pdf")
-        filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save as PDF',self.filename,filter=".html,*")[0]
+        filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save as PDF',tools.clean_export_name(self.filename,".pdf"),filter="PDF files (*.pdf)")[0]
         pypandoc.convert_text(self.text.toPlainText(), 'pdf', format='md', outputfile=filename, extra_args=pdoc_args)
 
 
     def exportHTML(self):
         pdoc_args = self.getOptions("html")
-        filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save as HTML',self.filename,filter=".html,*")[0]
+        filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save as HTML',tools.clean_export_name(self.filename,".html"),filter="Web files (*.html *.htm)")[0]
         pypandoc.convert_text(self.text.toPlainText(), 'html', format='md', outputfile=filename, extra_args=pdoc_args)
 
     def exportEpub(self):
         pdoc_args = self.getOptions("epub")
-        filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Export as Epub',self.filename,filter=".epub,*")[0]
+        filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Export as Epub',tools.clean_export_name(self.filename,".epub"),filter=".epub")[0]
         pypandoc.convert_text(self.text.toPlainText(), 'epub', format='md', outputfile=filename, extra_args=pdoc_args)
 
     def exportDocx(self):
         pdoc_args = self.getOptions("docx")
-        filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Export as OpenDocument',self.filename,filter=".docx,*")[0]
+        filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Export as OpenDocument',tools.clean_export_name(self.filename,".docx"),filter=".docx,*")[0]
         pypandoc.convert_text(self.text.toPlainText(), 'docx', format='md', outputfile=filename, extra_args=pdoc_args)
 
 
     def exportTex(self):
         pdoc_args = self.getOptions("tex")
-        filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Export as tex',self.filename,filter=".tex,*")[0]
+        filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Export as tex',tools.clean_export_name(self.filename,".tex"),filter=".tex,*")[0]
         pypandoc.convert_text(self.text.toPlainText(), 'tex', format='md', outputfile=filename, extra_args=pdoc_args)
 
 

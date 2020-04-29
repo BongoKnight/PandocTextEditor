@@ -5,7 +5,6 @@ from PyQt5 import QtWidgets
 #PYQT5 QDialog, QGridLayout, QLabel, QWidget
 
 from PyQt5 import QtGui, QtCore
-from PyQt5.QtCore import Qt
 
 class WordCount(QtWidgets.QDialog):
     def __init__(self,parent = None):

@@ -34,7 +34,7 @@ import sys
 
 #PYQT5 PyQt4’s QtGui module has been split into PyQt5’s QtGui, QtPrintSupport and QtWidgets modules
 
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtGui
 #PYQT5 QSpinBox, QMessageBox, QDialog, QPushButton, QGridLayout, QLabel
 
 
@@ -47,6 +47,7 @@ class Parameters(QtWidgets.QDialog):
         self.initUI()
  
     def initUI(self):
+        self.setWindowIcon(QtGui.QIcon("icons/gear.png"))
         # Button
         cancelButton = QtWidgets.QPushButton("Cancel",self)
         cancelButton.clicked.connect(self.cancel)
@@ -54,34 +55,50 @@ class Parameters(QtWidgets.QDialog):
         saveButton.clicked.connect(self.save)
         
         
-        # Check Box
-        self.tocLabel = QtWidgets.QLabel("Table of content : ",self)
+        # Check Box for options
+        self.tocLabel = QtWidgets.QLabel("Table des matières : ",self)
         self.tocBox = QtWidgets.QCheckBox(self)
+        self.tocBox.setTristate(False)
 
-        self.selfContainedLabel = QtWidgets.QLabel("Self contained HTML : ",self)
+        self.selfContainedLabel = QtWidgets.QLabel("HTML auto-suffisant : ",self)
         self.selfContainedBox = QtWidgets.QCheckBox(self)
+        self.selfContainedBox.setTristate(False)
         
-        self.mathjaxLabel = QtWidgets.QLabel("Use mathjax : ",self)
+        self.mathjaxLabel = QtWidgets.QLabel("Utiliser mathjax : ",self)
         self.mathjaxBox = QtWidgets.QCheckBox(self)
-        
+        self.mathjaxBox.setTristate(False)
+
+        # Custom compilation command
+        compileLabel = QtWidgets.QLabel("Utiliser une commande pour la compilation :",self)
+        self.compileCommand = QtWidgets.QLineEdit(self)
+        self.compileCommand.setPlaceholderText("Entrer une commande à utiliser lors de l'export.")
+
+        # Pdf engine
+
+
         # file selction
-        self.cssBox = QtWidgets.QLabel("CSS for HTML export : ",self)
-        self.cssButton= QtWidgets.QPushButton("Select file",self)
+        self.cssBox = QtWidgets.QLabel("Utiliser un CSS pour l'HTML: ",self)
+        self.cssButton= QtWidgets.QPushButton("Choisir un fichier",self)
         self.cssButton.clicked.connect(self.selectCSS)
+        self.cssSelected = QtWidgets.QLabel("",self)
+    
 
 
         if str(type(self.parent))== "<class '__main__.textEdit'>":
+        # Try to load preceding conf
             if self.parent.config["css"]:
                 self.cssSelected = QtWidgets.QLabel(self.parent.config["css"],self)
             else:
                 self.cssSelected = QtWidgets.QLabel("",self)
             if self.parent.config["selfContained"]:
-                self.selfContainedBox.setCheckState(True)
+                self.selfContainedBox.setChecked(True)
             if self.parent.config["mathjax"]:
-                self.mathjaxBox.setCheckState(True)
+                self.mathjaxBox.setChecked(True)
             if self.parent.config["toc"]:
-                self.tocBox.setCheckState(True)
-        
+                self.tocBox.setChecked(True)
+            if self.parent.config["command"]:
+                self.compileCommand.setText(self.parent.config["command"])
+
         # Layout
         layout = QtWidgets.QGridLayout()
         
@@ -95,48 +112,51 @@ class Parameters(QtWidgets.QDialog):
         layout.addWidget(self.cssBox,3,0)
         layout.addWidget(self.cssButton,3,1)
         layout.addWidget(self.cssSelected,3,2)
-#        layout.addWidget()
-#        layout.addWidget()
-#        layout.addWidget()
+        layout.addWidget(compileLabel,4,0)
+        layout.addWidget(self.compileCommand,4,1)
+        #layout.addWidget()
         
         
         
         layout.addWidget(saveButton,11,0,11,1)
         layout.addWidget(cancelButton,11,6,11,1)
 
-        self.setWindowTitle("Set export parameters")
+        self.setWindowTitle("Choix des paramètres d'export")
         self.setGeometry(300,300,1000,400)
         self.setLayout(layout)
         self.show()
 
     def save(self):
-        self.parent.updateConf("css",self.cssSelected.text())
-        if self.tocBox.checkState():
-            self.parent.updateConf("toc",True,False)
-        else:
-            self.parent.updateConf("toc",False,False)
-            
-        if self.selfContainedBox.checkState():
-            self.parent.updateConf("selfContained",True,False)
-        else :
-            self.parent.updateConf("selfContained",False,False)
-            
-        if self.mathjaxBox.checkState():
-            self.parent.updateConf("mathjax",True,False)
-        else:
-            self.parent.updateConf("mathjax",False,False)
+        if self.parent !=None:
+            self.parent.updateConf("css",self.cssSelected.text())
+            if self.tocBox.checkState():
+                self.parent.updateConf("toc",True,False)
+            else:
+                self.parent.updateConf("toc",False,False)
+                
+            if self.selfContainedBox.checkState():
+                self.parent.updateConf("selfContained",True,False)
+            else :
+                self.parent.updateConf("selfContained",False,False)
+                
+            if self.mathjaxBox.checkState():
+                self.parent.updateConf("mathjax",True,False)
+            else:
+                self.parent.updateConf("mathjax",False,False)
 
-        if self.selfContainedBox.checkState():
-            self.parent.updateConf("selfContained",True,False)
-        else:
-            self.parent.updateConf("selfContained",False,False)            
-        
-        self.parent.saveConfig()
+            if self.selfContainedBox.checkState():
+                self.parent.updateConf("selfContained",True,False)
+            else:
+                self.parent.updateConf("selfContained",False,False)
+
+            self.parent.updateConf("command",self.compileCommand.text(),True)            
+            
+            self.parent.saveConfig()
         
         self.close()
         
     def selectCSS(self):
-        filename = QtWidgets.QFileDialog.getOpenFileName(self, 'Select CSS')[0]
+        filename = QtWidgets.QFileDialog.getOpenFileName(self, 'Fichier CSS')[0]
         self.cssSelected.setText(filename)
         
         
